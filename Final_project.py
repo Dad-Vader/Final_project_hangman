@@ -10,21 +10,26 @@ from db.db_manipulation import Words
 
 
 class HangmanGame(QtWidgets.QWidget):
-    """Основной класс игры (графический интерфейс и обработка).
-    """
+    """Основной класс игры (графический интерфейс и обработка)."""
+
     def __init__(self):
         """Инициализатор класса. Наследует инициализатор родительского класса.
         """
         super().__init__()
         self.init_ui()
-        self.word = ""
+        self.word = ''
         self.guesses = []
+        self.alphabet = 'абвгдежзиклмнопрстуфхцчшщъыьэюя'
         self.reset_game()
+        self.start_game('Простой')
+        self.guessed_letters = []
+        self.attempts = 6
 
     def init_ui(self):
         """Метод класса реализующий графический интерфейс основного окна.
         """
         self.setWindowTitle('Виселица')
+        self.setWindowIcon(QtGui.QIcon('.\\pic\\hang.png'))
         self.setFixedSize(QSize(450, 450))
 
         self.start_button = QtWidgets.QPushButton('Выбрать уровень сложности',
@@ -96,11 +101,7 @@ class HangmanGame(QtWidgets.QWidget):
         wd = Words('db/words.db')
         word = random.choice(wd.get(difficulty))
         self.word = word[0]
-        print(self.word)
         self.reset_game()
-        #self.guessed_letters = []
-        #self.attempts = 6
-        #self.update_display()
 
     def reset_game(self):
         """Метод класса сбрасывающий счетчик неудачных попыток и названых
@@ -113,7 +114,7 @@ class HangmanGame(QtWidgets.QWidget):
     def update_display(self):
         """Метод класса для вывода информации об угадываемом слове,
         использованных буквах, количестве оставшихся неудачных попыток,
-        а также для отображения "виселицы"
+        а также для отображения "виселицы".
         """
         displayed_word = ''.join([letter if letter in self.guessed_letters
                                   else '_ ' for letter in self.word])
@@ -128,11 +129,12 @@ class HangmanGame(QtWidgets.QWidget):
     def guess_letter(self):
         """Метод класса для обработки вводимых букв, проверка, что все слово
         угадано, изменение счетчика неудачных попыток при вводе
-        буквы, которой нет в слове и смены изображения "виселицы"
+        буквы, которой нет в слове и смены изображения "виселицы".
         """
         letter = self.input_letter.text().lower()
         self.input_letter.clear()
-        if letter in self.guessed_letters or len(letter) != 1:
+        if (letter in self.guessed_letters or len(letter) != 1 or
+                not (letter in self.alphabet)):
             return
         self.guessed_letters.append(letter)
         if all(letter in self.guessed_letters for letter in self.word):
@@ -140,6 +142,8 @@ class HangmanGame(QtWidgets.QWidget):
             QtWidgets.QMessageBox.information(self, 'Поздравляем!',
                                               f'Вы угадали слово: {self.word}')
             self.reset_game()
+            self.select_difficulty()
+            return
         if letter not in self.word:
             self.attempts -= 1
             self.pixmap = QPixmap(f'.\\pic\\hung{self.attempts}.png')
@@ -158,12 +162,13 @@ class HangmanGame(QtWidgets.QWidget):
             QtWidgets.QMessageBox.StandardButton.No)
         if reply == QtWidgets.QMessageBox.StandardButton.Yes:
             self.reset_game()
+            self.select_difficulty()
         else:
             self.close()
 
     def exit_game(self):
         """Метод класса позволяющий завершить игру и выйти из приложения (
-        есть возможность посмотреть загаданное слово)
+        есть возможность посмотреть загаданное слово).
         """
         reply = QtWidgets.QMessageBox.question(
             self, 'Выход', 'Хотите увидеть загаданное слово?',
